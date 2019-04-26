@@ -25,6 +25,8 @@ class KnnRecommender:
         path_movies: str, movies data file path
         path_ratings: str, ratings data file path
         """
+        self.nro_usuarios=0
+        self.nro_peliculas=0
         self.path_movies = path_movies
         self.path_ratings = path_ratings
         self.movie_rating_thres = 0
@@ -202,7 +204,8 @@ class KnnRecommender:
         for i, (idx, dist) in enumerate(raw_recommends):
             print('{0}: {1}, with distance '
                   'of {2}'.format(i+1, reverse_hashmap[idx], dist))
-
+    def recomendar(self, user, k):
+        
 
 def parse_args():
     parser = argparse.ArgumentParser(
