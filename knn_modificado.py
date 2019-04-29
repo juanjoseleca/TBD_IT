@@ -13,9 +13,7 @@ from fuzzywuzzy import fuzz
 
 
 class KnnRecommender:
-
     def __init__(self, path_movies, path_ratings):
-
         self.path_movies = path_movies
         self.path_ratings = path_ratings
         self.movie_rating_thres = 0
@@ -23,12 +21,10 @@ class KnnRecommender:
         self.model = NearestNeighbors()
 
     def set_filter_params(self, movie_rating_thres, user_rating_thres):
-        
         self.movie_rating_thres = movie_rating_thres
         self.user_rating_thres = user_rating_thres
 
     def set_model_params(self, n_neighbors, algorithm, metric, n_jobs=None):
-        
         if n_jobs and (n_jobs > 1 or n_jobs == -1):
             os.environ['JOBLIB_TEMP_FOLDER'] = '/tmp'
         self.model.set_params(**{
@@ -38,8 +34,6 @@ class KnnRecommender:
             'n_jobs': n_jobs})
 
     def _prep_data(self):
-
-        # read data
         df_movies = pd.read_csv(
             os.path.join(self.path_movies),
             usecols=['movieId', 'title'],
@@ -48,7 +42,6 @@ class KnnRecommender:
             os.path.join(self.path_ratings),
             usecols=['userId', 'movieId', 'rating'],
             dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'float32'})
-        # filter data
         df_movies_cnt = pd.DataFrame(
             df_ratings.groupby('movieId').size(),
             columns=['count'])
@@ -60,30 +53,22 @@ class KnnRecommender:
             columns=['count'])
         active_users = list(set(df_users_cnt.query('count >= @self.user_rating_thres').index))  # noqa
         users_filter = df_ratings.userId.isin(active_users).values
-
         df_ratings_filtered = df_ratings[movies_filter & users_filter]
-
-        # pivot and create movie-user matrix
         movie_user_mat = df_ratings_filtered.pivot(
             index='movieId', columns='userId', values='rating').fillna(0)
         print(movie_user_mat)
-        # create mapper from movie title to index
         hashmap = {
             movie: i for i, movie in
             enumerate(list(df_movies.set_index('movieId').loc[movie_user_mat.index].title)) # noqa
         }
         print("hash->",hashmap)
-        # transform matrix to scipy sparse matrix
         movie_user_mat_sparse = csr_matrix(movie_user_mat.values)
-
-        # clean up
         del df_movies, df_movies_cnt, df_users_cnt
         del df_ratings, df_ratings_filtered, movie_user_mat
         gc.collect()
         return movie_user_mat_sparse, hashmap
 
     def _fuzzy_matching(self, hashmap, fav_movie):
-
         match_tuple = []
         # get match
         for title, idx in hashmap.items():
@@ -131,13 +116,6 @@ class KnnRecommender:
         return raw_recommends
 
     def make_recommendations(self, fav_movie, n_recommendations):
-        """
-        make top n movie recommendations
-        Parameters
-        ----------
-        fav_movie: str, name of user input movie
-        n_recommendations: int, top n recommendations
-        """
         # get data
         movie_user_mat_sparse, hashmap = self._prep_data()
         # get recommendations
