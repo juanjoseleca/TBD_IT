@@ -1,6 +1,6 @@
 import os
 
-def split(filehandler, delimiter=',', user_limit=50, 
+def split(filehandler, delimiter=',', user_limit=100000, 
     output_name_template='output_%s.csv', output_path='.', keep_headers=True):
     import csv
     reader = csv.reader(filehandler, delimiter=delimiter)

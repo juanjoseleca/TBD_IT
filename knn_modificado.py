@@ -13,18 +13,9 @@ from fuzzywuzzy import fuzz
 
 
 class KnnRecommender:
-    """
-    This is an item-based collaborative filtering recommender with
-    KNN implmented by sklearn
-    """
+
     def __init__(self, path_movies, path_ratings):
-        """
-        Recommender requires path to data: movies data and ratings data
-        Parameters
-        ----------
-        path_movies: str, movies data file path
-        path_ratings: str, ratings data file path
-        """
+
         self.path_movies = path_movies
         self.path_ratings = path_ratings
         self.movie_rating_thres = 0
@@ -32,28 +23,12 @@ class KnnRecommender:
         self.model = NearestNeighbors()
 
     def set_filter_params(self, movie_rating_thres, user_rating_thres):
-        """
-        set rating frequency threshold to filter less-known movies and
-        less active users
-        Parameters
-        ----------
-        movie_rating_thres: int, minimum number of ratings received by users
-        user_rating_thres: int, minimum number of ratings a user gives
-        """
+        
         self.movie_rating_thres = movie_rating_thres
         self.user_rating_thres = user_rating_thres
 
     def set_model_params(self, n_neighbors, algorithm, metric, n_jobs=None):
-        """
-        set model params for sklearn.neighbors.NearestNeighbors
-        Parameters
-        ----------
-        n_neighbors: int, optional (default = 5)
-        algorithm: {'auto', 'ball_tree', 'kd_tree', 'brute'}, optional
-        metric: string or callable, default 'minkowski', or one of
-            ['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan']
-        n_jobs: int or None, optional (default=None)
-        """
+        
         if n_jobs and (n_jobs > 1 or n_jobs == -1):
             os.environ['JOBLIB_TEMP_FOLDER'] = '/tmp'
         self.model.set_params(**{
@@ -63,11 +38,7 @@ class KnnRecommender:
             'n_jobs': n_jobs})
 
     def _prep_data(self):
-        """
-        prepare data for recommender
-        1. movie-user scipy sparse matrix
-        2. hashmap of movie to row index in movie-user scipy sparse matrix
-        """
+
         # read data
         df_movies = pd.read_csv(
             os.path.join(self.path_movies),
@@ -112,17 +83,7 @@ class KnnRecommender:
         return movie_user_mat_sparse, hashmap
 
     def _fuzzy_matching(self, hashmap, fav_movie):
-        """
-        return the closest match via fuzzy ratio.
-        If no match found, return None
-        Parameters
-        ----------
-        hashmap: dict, map movie title name to index of the movie in data
-        fav_movie: str, name of user input movie
-        Return
-        ------
-        index of the closest match
-        """
+
         match_tuple = []
         # get match
         for title, idx in hashmap.items():
@@ -140,33 +101,20 @@ class KnnRecommender:
 
     def _inference(self, model, data, hashmap,
                    fav_movie, n_recommendations):
-        """
-        return top n similar movie recommendations based on user's input movie
-        Parameters
-        ----------
-        model: sklearn model, knn model
-        data: movie-user matrix
-        hashmap: dict, map movie title name to index of the movie in data
-        fav_movie: str, name of user input movie
-        n_recommendations: int, top n recommendations
-        Return
-        ------
-        list of top n similar movie recommendations
-        """
         # fit
         model.fit(data)
-        # get input movie index
+
         print('You have input movie:', fav_movie)
         idx = self._fuzzy_matching(hashmap, fav_movie)
         print("-------->",idx,fav_movie)
-        # inference
+
         print('Recommendation system start to make inference')
         print('......\n')
         t0 = time.time()
         distances, indices = model.kneighbors(
             data[idx],
             n_neighbors=n_recommendations+1)
-        # get list of raw idx of recommendations
+
         raw_recommends = \
             sorted(
                 list(
@@ -230,12 +178,11 @@ if __name__ == '__main__':
     movie_name = args.movie_name
     print(movie_name)
     top_n = args.top_n
-    # initial recommender system
+
     recommender = KnnRecommender(
         os.path.join(data_path, movies_filename),
         os.path.join(data_path, ratings_filename))
-    # set params
+
     recommender.set_filter_params(50, 50)
     recommender.set_model_params(20, 'brute', 'cosine', -1)
-    # make recommendations
     recommender.make_recommendations(movie_name, top_n)
